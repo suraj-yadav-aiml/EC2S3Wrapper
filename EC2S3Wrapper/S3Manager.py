@@ -55,48 +55,31 @@ class S3Manager:
             print("AWS credentials not found. Ensure they are set correctly.")
             raise
     
-    def create_bucket(self, bucket_name: str, region: Optional[str] = None) -> None:
+    def create_bucket(self, bucket_name: str) -> None:
         """
-        Creates an S3 bucket with the specified name. If the bucket already exists and is owned by you,
-        it informs the user.
-        
+        Creates an S3 bucket if it does not already exist.
+
         Args:
-            bucket_name (str): The name of the bucket to be created.
-            region (Optional[str]): The AWS region where the bucket will be created. Defaults to None, 
-                                    using the default region of the client.
-        
+            bucket_name (str): The name of the S3 bucket to create.
+
         Raises:
             ClientError: If there is an issue with the S3 client request.
             NoCredentialsError: If AWS credentials are not found or improperly configured.
         """
         try:
-            print(f"Attempting to create bucket: {bucket_name}...")
-
-            # Setting location constraint if region is specified
-            create_bucket_params = {"Bucket": bucket_name}
-            if region and region != "us-east-1":
-                create_bucket_params["CreateBucketConfiguration"] = {
-                    "LocationConstraint": region
-                }
+            # Check if the bucket already exists
+            all_buckets = self.list_buckets()
+            if bucket_name not in all_buckets:
+                self.s3.create_bucket(Bucket=bucket_name)
+                print(f"S3 Bucket with name '{bucket_name}' has been created successfully.")
             else:
-                create_bucket_params["CreateBucketConfiguration"] = {
-                    "LocationConstraint": "us-east-1"
-                }
-
-            self.s3.create_bucket(**create_bucket_params)
-            print(f"S3 Bucket '{bucket_name}' successfully created!")
-
+                print(f"S3 Bucket '{bucket_name}' already exists.")
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'BucketAlreadyOwnedByYou':
-                print(f"Bucket '{bucket_name}' already exists and is owned by you.")
-            elif error_code == 'BucketAlreadyExists':
-                print(f"Bucket '{bucket_name}' already exists but is owned by another account.")
-            else:
-                print(f"An error occurred while creating bucket '{bucket_name}': {e}")
-                raise
+            print(f"Error creating bucket: {e}")
+            raise
         except NoCredentialsError:
             print("AWS credentials not found. Ensure they are set correctly.")
             raise
+
 
 

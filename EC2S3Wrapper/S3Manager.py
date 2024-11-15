@@ -163,7 +163,7 @@ class S3Manager:
             self.s3.download_file(Bucket=bucket_name, Key=object_name, Filename=file_path)
             print(f"Downloaded '{object_name}' from S3 bucket '{bucket_name}' to '{file_path}'")
         except ClientError as e:
-            if e.response['Error']['Code'] == 'NoSuchKey':
+            if e.response['Error']['Code'] == 'Not Found':
                 print(f"Object '{object_name}' not found in bucket '{bucket_name}'")
             else:
                 print(f"Error downloading file: {e}")

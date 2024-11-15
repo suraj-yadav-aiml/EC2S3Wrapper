@@ -46,7 +46,7 @@ class S3Manager:
             print("Fetching the list of buckets...")
             response = self.s3.list_buckets()
             buckets = [bucket['Name'] for bucket in response['Buckets']]
-            print(f"Buckets found: {buckets}")
+            # print(f"Buckets found: {buckets}")
             return buckets
         except ClientError as e:
             print(f"Error listing buckets: {e}")
@@ -77,6 +77,10 @@ class S3Manager:
             if region and region != "us-east-1":
                 create_bucket_params["CreateBucketConfiguration"] = {
                     "LocationConstraint": region
+                }
+            else:
+                create_bucket_params["CreateBucketConfiguration"] = {
+                    "LocationConstraint": "us-east-1"
                 }
 
             self.s3.create_bucket(**create_bucket_params)

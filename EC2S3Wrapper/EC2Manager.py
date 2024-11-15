@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Optional
 
@@ -545,6 +546,62 @@ class EC2Manager:
             return public_ip
         except ClientError as e:
             print(f"An error occurred while retrieving public IP for instance {instance_id}: {e}")
+            raise
+        except NoCredentialsError:
+            print("AWS credentials not found.")
+            raise
+    
+    def create_key_pair(
+    self, 
+    key_name: str, 
+    file_path: str, 
+    return_full_path: bool = False
+    ) -> str | None:
+        """
+        Creates a new EC2 key pair and saves the private key material to a .pem file 
+        with the same name as the key pair.
+
+        Args:
+            key_name (str): The name for the new key pair and the .pem file.
+            file_path (str): The directory path where the .pem file will be stored.
+            return_full_path (bool, optional): If True, returns the full path of the saved .pem file. Defaults to False.
+
+        Returns:
+            str | None: The full path of the saved .pem file if return_full_path=True; otherwise, returns None.
+
+        Raises:
+            FileExistsError: If the .pem file already exists at the specified location.
+            ClientError: If the AWS EC2 create_key_pair API call fails.
+            NoCredentialsError: If AWS credentials are missing.
+        """
+        try:
+            # Prepare the full file path using the key_name for the file name
+            full_path = os.path.join(file_path, f"{key_name}.pem")
+            
+            # Check if the file already exists
+            if os.path.exists(full_path):
+                raise FileExistsError(f"The file '{full_path}' already exists. Operation aborted to avoid overwriting.")
+            
+            # Create the key pair using AWS EC2 API
+            print(f"Creating key pair '{key_name}'...")
+            response = self.ec2.create_key_pair(KeyName=key_name)
+            
+            # Save the private key material to the file
+            os.makedirs(file_path, exist_ok=True)  # Ensure the directory exists
+            with open(full_path, 'w') as file:
+                file.write(response['KeyMaterial'])
+            os.chmod(full_path, 0o400)  # Secure the file by setting permissions
+            
+            print(f"Key pair '{key_name}' created and saved to '{full_path}'.")
+            
+            # Return the full path only if requested
+            if return_full_path:
+                return full_path
+
+        except FileExistsError as e:
+            print(e)
+        except ClientError as e:
+            print(f"An error occurred while creating key pair '{key_name}': {e}")
             raise
         except NoCredentialsError:
             print("AWS credentials not found.")

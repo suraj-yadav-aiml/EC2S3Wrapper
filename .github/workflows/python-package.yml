@@ -2,6 +2,8 @@ name: Publish EC2S3Wrapper to PyPI
 
 on:
   workflow_dispatch:
+  push: 
+    branches: ['main']
 
 jobs:
     python-build-n-publish:

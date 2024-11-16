@@ -1,3 +1,4 @@
+import inspect
 import os
 import time
 from typing import Optional, List
@@ -799,4 +800,30 @@ class EC2Manager:
         except Exception as e:
             print(f"Error filtering instances by state '{state}': {e}")
             raise
+    
+    def list_ec2_manager_functions(self) -> None:
+        """
+        Dynamically lists all callable functions in the EC2Manager class.
 
+        This function identifies all the public methods of the EC2Manager class,
+        excluding inherited or private methods, and displays them in a nicely formatted list.
+        """
+        try:
+            # Retrieve all methods from the EC2Manager class
+            methods = inspect.getmembers(EC2Manager, predicate=inspect.isfunction)
+
+            # Filter only the public methods (exclude private and inherited methods)
+            ec2_manager_methods = [
+                method_name for method_name, _ in methods if not method_name.startswith("_")
+            ]
+
+            if ec2_manager_methods:
+                print("Available EC2Manager Functions:")
+                for i, method in enumerate(ec2_manager_methods, 1):
+                    print(f"{i}. {method}")
+            else:
+                print("No functions found in EC2Manager.")
+
+        except Exception as e:
+            print(f"Error listing EC2Manager functions: {e}")
+            raise

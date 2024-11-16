@@ -1,3 +1,4 @@
+import inspect
 import os
 from typing import List, Optional
 
@@ -351,4 +352,31 @@ class S3Manager:
             raise
         except Exception as e:
             print(f"An unexpected error occurred while deleting bucket '{bucket_name}': {e}")
+            raise
+    
+    def list_s3_manager_functions(self) -> None:
+        """
+        Dynamically lists all callable functions in the S3Manager class.
+
+        This function identifies all the public methods of the S3Manager class,
+        excluding inherited or private methods, and displays them in a nicely formatted list.
+        """
+        try:
+            # Retrieve all methods from the S3Manager class
+            methods = inspect.getmembers(S3Manager, predicate=inspect.isfunction)
+
+            # Filter only the public methods (exclude private and inherited methods)
+            s3_manager_methods = [
+                method_name for method_name, _ in methods if not method_name.startswith("_")
+            ]
+
+            if s3_manager_methods:
+                print("Available S3Manager Functions:")
+                for i, method in enumerate(s3_manager_methods, 1):
+                    print(f"{i}. {method}")
+            else:
+                print("No functions found in S3Manager.")
+
+        except Exception as e:
+            print(f"Error listing S3Manager functions: {e}")
             raise

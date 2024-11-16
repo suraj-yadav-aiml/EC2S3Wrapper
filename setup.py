@@ -5,7 +5,7 @@ with open('./README.md','r') as file:
 
 setuptools.setup(
 	name = 'EC2S3Wrapper', #this should be unique
-	version = '0.0.9',
+	version = '1.0.0',
 	author = 'Suraj Yadav',
 	author_email = 'sam124.sy@gmail.com',
 	description = """
@@ -19,6 +19,7 @@ setuptools.setup(
 	"Operating System :: OS Independent"],
 	python_requires = '>=3.10',
     install_requires=[
-        'boto3'
+        'boto3',
+        'tabulate'
     ]
 	)

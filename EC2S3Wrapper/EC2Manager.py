@@ -113,6 +113,44 @@ class EC2Manager:
         except NoCredentialsError:
             print("AWS credentials not found. Ensure they are set correctly.")
             raise
+    
+    def list_all_instances_in_table(self) -> None:
+        """
+        Fetches and displays details of all EC2 instances in a nicely formatted table.
+
+        Raises:
+            Exception: If no instances are found or any other error occurs.
+        """
+        try:
+            # Call list_all_instances() method
+            instances = self.list_all_instances(get_count_message=False)
+
+            # Check if there are any instances
+            if not instances:
+                print("No EC2 instances found.")
+                return
+
+            # Format data for display
+            headers = ["Name", "InstanceID", "State", "InstanceType", "PublicIP", "PrivateIP", "LaunchTime"]
+            table_data = []
+
+            for instance in instances:
+                table_data.append([
+                    instance['Name'],
+                    instance["InstanceID"],
+                    instance["State"],
+                    instance["InstanceType"],
+                    instance["PublicIP"],
+                    instance["PrivateIP"],
+                    instance["LaunchTime"],
+                ])
+
+            # Display instances in a table format
+            print(tabulate(table_data, headers=headers, tablefmt="grid"))
+
+        except Exception as e:
+            print(f"Error displaying EC2 instances: {e}")
+            raise
 
     
     def get_instance_details_by_id(self, instance_id: str) -> Optional[dict]:

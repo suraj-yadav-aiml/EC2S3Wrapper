@@ -4,6 +4,7 @@ from typing import Optional, List
 
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
+from tabulate import tabulate
 
 
 class EC2Manager:

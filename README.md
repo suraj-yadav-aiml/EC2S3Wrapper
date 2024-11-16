@@ -57,7 +57,7 @@ pip install EC2S3Wrapper
 **Overview**: The `EC2Manager` module simplifies managing EC2 instances. It supports key EC2 operations and integrates robust exception handling.
 
 #### Key Functions:
-1. **`list_instances`**: Lists all EC2 instances
+1. **`list_all_instances`**: Lists all EC2 instances
 2. **`start_instance`**: Starts an EC2 instance by instance ID.
 3. **`stop_instance`**: Stops an EC2 instance by instance ID.
 4. **`terminate_instance`**: Terminates an EC2 instance by instance ID.

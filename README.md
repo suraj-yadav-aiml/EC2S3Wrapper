@@ -48,8 +48,7 @@ To install **EC2S3Wrapper**, you can use pip:
 
 ```bash
 pip install EC2S3Wrapper
-
----
+```
 
 ## Modules
 

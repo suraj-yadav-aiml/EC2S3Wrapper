@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Optional
+from typing import Optional, List
 
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
@@ -47,6 +47,143 @@ class EC2Manager:
             # Use default credentials if no keys are provided
             self.ec2 = boto3.client('ec2')
             self.iam = boto3.client('iam')
+    
+    def list_all_instances(self, get_count_message: bool = True) -> Optional[List[dict]]:
+        """
+        Fetches and displays details of all EC2 instances in the AWS account.
+
+        This method retrieves information about all EC2 instances using the 
+        `describe_instances` API call. It organizes the instance details into a list of dictionaries, 
+        with each dictionary representing a single EC2 instance. 
+
+        Additionally, if a "Name" tag is associated with an instance, it is included in the results.
+
+        Args:
+            get_count_message (bool): If True, displays a message with the count of instances 
+                                    found. Defaults to True.
+
+        Returns:
+            Optional[List[dict]]: A list of dictionaries containing details of EC2 instances. 
+                                Each dictionary contains the following keys:
+                                - "InstanceID": The ID of the instance.
+                                - "State": The current state of the instance (e.g., running, stopped, terminated, pending, ).
+                                - "InstanceType": The type of instance (e.g., t2.micro).
+                                - "PublicIP": The public IP address of the instance (or 'N/A' if not assigned).
+                                - "PrivateIP": The private IP address of the instance (or 'N/A' if not assigned).
+                                - "LaunchTime": The launch time of the instance in 'YYYY-MM-DD HH:MM:SS' format.
+                                - "Name": The value of the "Name" tag, if present (or 'N/A' if not set).
+
+        Raises:
+            ClientError: If there is an error in communicating with the AWS API.
+            NoCredentialsError: If AWS credentials are not set or found.
+        """
+        try:
+            print("Fetching details of all EC2 instances...")
+            response = self.ec2.describe_instances()
+
+            # Instance extraction using list comprehension with Name tag handling
+            instances = [
+                {
+                    "Name": next(
+                        (tag['Value'] for tag in instance.get('Tags', []) if tag['Key'] == 'Name'),
+                        'N/A'
+                    ),
+                    "InstanceID": instance['InstanceId'],
+                    "State": instance['State']['Name'],
+                    "InstanceType": instance['InstanceType'],
+                    "PublicIP": instance.get('PublicIpAddress', 'N/A'),
+                    "PrivateIP": instance.get('PrivateIpAddress', 'N/A'),
+                    "LaunchTime": instance['LaunchTime'].strftime('%Y-%m-%d %H:%M:%S'),
+                    
+                }
+                for reservation in response['Reservations']
+                for instance in reservation['Instances']
+            ]
+
+            if instances:
+                if get_count_message:
+                    print(f"Found {len(instances)} instances.")
+            else:
+                print("No EC2 instances found.")
+            return instances
+
+        except ClientError as e:
+            print(f"Error listing EC2 instances: {e}")
+            raise
+        except NoCredentialsError:
+            print("AWS credentials not found. Ensure they are set correctly.")
+            raise
+
+    
+    def get_instance_details_by_id(self, instance_id: str) -> Optional[dict]:
+        """
+        Retrieves detailed information about a specific EC2 instance.
+
+        Args:
+            instance_id (str): The ID of the EC2 instance.
+
+        Returns:
+            Optional[dict]: A dictionary containing detailed instance information or None if not found.
+        """
+        try:
+            response = self.ec2.describe_instances(InstanceIds=[instance_id])
+            if response['Reservations']:
+                instance = response['Reservations'][0]['Instances'][0]
+                return {
+                    "Name": next(
+                        (tag['Value'] for tag in instance.get('Tags', []) if tag['Key'] == 'Name'),
+                        'N/A'
+                    ),
+                    "InstanceID": instance['InstanceId'],
+                    "State": instance['State']['Name'],
+                    "InstanceType": instance['InstanceType'],
+                    "PublicIP": instance.get('PublicIpAddress', 'N/A'),
+                    "PrivateIP": instance.get('PrivateIpAddress', 'N/A'),
+                    "LaunchTime": instance['LaunchTime'].strftime('%Y-%m-%d %H:%M:%S')
+                }
+            else:
+                print(f"No instance found with ID '{instance_id}'.")
+                return None
+        except ClientError as e:
+            print(f"Error retrieving instance details: {e}")
+            raise
+    
+    def get_instance_details_by_name(self, name: str) -> Optional[dict]:
+        """
+        Retrieves detailed information about an EC2 instance using its name tag.
+
+        Args:
+            name (str): The name of the EC2 instance (as specified in the Name tag).
+
+        Returns:
+            Optional[dict]: A dictionary containing the instance details, or None if the instance is not found.
+
+        Raises:
+            Exception: If an unexpected error occurs during the operation.
+        """
+        try:
+            # Get instance ID by name
+            instance_id = self.get_instance_id_by_name(name)
+            if not instance_id:
+                print(f"No instance found with the name '{name}'.")
+                return None
+
+            # Get instance details by ID
+            instance_details = self.get_instance_details_by_id(instance_id)
+            if not instance_details:
+                print(f"Unable to retrieve details for instance ID '{instance_id}'.")
+                return None
+
+            return instance_details
+
+        except ClientError as e:
+            print(f"AWS ClientError occurred while fetching instance details by name '{name}': {e}")
+            raise
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            raise
+
 
     def get_instance_id_by_name(self, instance_name: str) -> Optional[str]:
         """
@@ -606,3 +743,21 @@ class EC2Manager:
         except NoCredentialsError:
             print("AWS credentials not found.")
             raise
+    
+    def get_instances_by_state(self, state: str) -> List[dict]:
+        """
+        Retrieves EC2 instances by their state.
+
+        Args:
+            state (str): The state of the instances to retrieve (e.g., 'running', 'stopped').
+
+        Returns:
+            List[dict]: A list of instances in the specified state.
+        """
+        try:
+            instances = self.list_all_instances(get_count_message=False)
+            return [instance for instance in instances if instance['State'] == state]
+        except Exception as e:
+            print(f"Error filtering instances by state '{state}': {e}")
+            raise
+
